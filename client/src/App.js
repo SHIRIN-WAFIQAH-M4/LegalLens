@@ -20,7 +20,10 @@ function App() {
     try {
       console.log("📤 Sending file to backend...");
 
-      const res = await fetch("https://your-backend-name.onrender.com/upload", ...);
+      const res = await fetch("https://legallens-1-70n5.onrender.com/upload", {
+        method : "POST",
+        body: formData,
+      });
 
       const data = await res.json();
 
