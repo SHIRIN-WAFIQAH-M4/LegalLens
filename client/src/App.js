@@ -18,16 +18,14 @@ function App() {
     setLoading(true);
     setResult(null);
 
-<<<<<<< HEAD
-      const res = await fetch("https://legallens-1-70n5.onrender.com/upload", {
-        method : "POST",
-=======
     try {
-      const res = await fetch("https://legallens-1-70n5.onrender.com/upload", {
-        method: "POST",
->>>>>>> 7290700 (Update UI and fix backend document handling)
-        body: formData,
-      });
+      const res = await fetch(
+        "https://legallens-1-70n5.onrender.com/upload",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       const data = await res.json();
 
