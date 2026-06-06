@@ -23,7 +23,7 @@ function App() {
         method : "POST",
 =======
     try {
-      const res = await fetch("http://localhost:5000/upload", {
+      const res = await fetch("https://legallens-1-70n5.onrender.com/upload", {
         method: "POST",
 >>>>>>> 7290700 (Update UI and fix backend document handling)
         body: formData,
