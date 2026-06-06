@@ -12,6 +12,7 @@ app.use(express.json());
 
 // 📂 uploads folder
 const uploadDir = path.join(__dirname, "uploads");
+
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
@@ -19,8 +20,9 @@ if (!fs.existsSync(uploadDir)) {
 // 📦 multer setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) =>
-    cb(null, Date.now() + "-" + file.originalname),
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + "-" + file.originalname);
+  },
 });
 
 const upload = multer({ storage });
@@ -30,13 +32,13 @@ app.get("/", (req, res) => {
   res.send("Server running");
 });
 
-// 🚀 MAIN ROUTE
+// 🚀 MAIN ROUTE (TXT ONLY)
 app.post("/upload", upload.single("file"), async (req, res) => {
   try {
     // 🔑 API key check
     if (!process.env.GROQ_API_KEY) {
       return res.status(500).json({
-        error: "Missing Groq API key in .env",
+        error: "Missing Groq API key",
       });
     }
 
@@ -47,36 +49,56 @@ app.post("/upload", upload.single("file"), async (req, res) => {
       });
     }
 
+    // 📄 only allow txt files
+    const ext = path.extname(req.file.originalname).toLowerCase();
+
+    if (ext !== ".txt") {
+      return res.status(400).json({
+        error: "Only .txt files are supported",
+      });
+    }
+
     console.log("📁 File:", req.file.originalname);
 
-    // 📄 read file
     const filePath = req.file.path;
+
+    // 📄 read txt file
     let text = fs.readFileSync(filePath, "utf8");
 
-    if (!text || text.trim().length === 0) {
+    if (!text || !text.trim()) {
       return res.status(400).json({
         error: "Empty file content",
       });
     }
 
     // ⚡ limit input size
-    text = text.slice(0, 1500);
+    text = text.slice(0, 3000);
 
     const prompt = `
 You are a legal assistant.
 
-Analyze this legal document and return STRICTLY:
+Return ONLY plain text.
+
+Do NOT use markdown.
+Do NOT use **.
+Do NOT use bullet symbols.
+Do NOT add extra headings.
+
+Use exactly this format:
 
 Summary:
-- short summary
+Write a short summary here.
 
 Key Points:
-1. ...
-2. ...
-
+1. Point one
+2. Point two
+3. Point three
+4. Point four
 Risks:
-1. ...
-2. ...
+1. Risk one
+2. Risk two
+3. Risk three
+4. Risk four
 
 Document:
 ${text}
@@ -93,7 +115,7 @@ ${text}
             content: prompt,
           },
         ],
-        temperature: 0.3,
+        temperature: 0.2,
         max_tokens: 500,
       },
       {
@@ -104,21 +126,26 @@ ${text}
       }
     );
 
-    // ✅ extract output
-    const output = response.data?.choices?.[0]?.message?.content;
+    const output =
+      response.data?.choices?.[0]?.message?.content || "";
 
-    if (!output) {
+    console.log("🤖 AI Output:");
+    console.log(output);
+
+    if (!output.trim()) {
       return res.status(500).json({
         error: "No AI output received",
-        debug: response.data,
       });
     }
 
-    // ✅ success
-    return res.json({ result: output });
-
+    return res.json({
+      result: output,
+    });
   } catch (err) {
-    console.error("❌ FULL ERROR:", err.response?.data || err.message);
+    console.error(
+      "❌ FULL ERROR:",
+      err.response?.data || err.message
+    );
 
     return res.status(500).json({
       error: "AI processing failed",
